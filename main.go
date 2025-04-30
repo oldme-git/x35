@@ -12,6 +12,7 @@ type Config struct {
 	MinInterval  int `json:"minInterval"`  // 最小间隔（秒）
 	MaxInterval  int `json:"maxInterval"`  // 最大间隔（秒）
 	RingDuration int `json:"ringDuration"` // 响铃持续时间（秒）
+	OutDuration  int `json:"outDuration"`  // 程序运行持续时间（秒）
 }
 
 func main() {
@@ -25,25 +26,42 @@ func main() {
 		fmt.Printf("配置加载错误: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println(config)
-	// ...后续代码不变
+
+	fmt.Print("\a")
+	log("学习开始")
+	fmt.Printf("当前配置：最小间隔: %ds 最大间隔: %ds 响铃时长: %ds 持续时长: %ds\n",
+		config.MinInterval, config.MaxInterval, config.RingDuration, config.OutDuration)
+
+	timeoutCh := time.After(time.Duration(config.OutDuration) * time.Second)
 
 	for {
-		// 生成随机间隔时间（180-300秒之间）
+		// 生成随机间隔时间
 		interval := rand.Intn(config.MaxInterval-config.MinInterval+1) + config.MinInterval
 		waitTime := time.Duration(interval) * time.Second
 
-		fmt.Printf("下一次响铃将在 %v 后触发...\n", waitTime)
-		<-time.After(waitTime)
+		select {
+		case <-timeoutCh:
+			fmt.Print("\a")
+			time.Sleep(1000 * time.Millisecond)
+			fmt.Print("\a")
+			log("学习结束")
+			os.Exit(1)
+		case <-time.After(waitTime):
+			log("冥想开始")
+			fmt.Print("\a")
 
-		fmt.Println("🔔 响铃开始！")
+			wt := time.Duration(config.RingDuration) * time.Second
+			<-time.After(wt)
 
-		fmt.Print("\a")
-		wt := time.Duration(config.RingDuration) * time.Second
-		<-time.After(wt)
-		fmt.Print("\a")
-		fmt.Println("🛑 响铃结束")
+			fmt.Print("\a")
+			log("冥想结束")
+		}
 	}
+}
+
+func log(t string) {
+	n := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Println(n + " " + t)
 }
 
 func loadConfig(path string) (*Config, error) {
@@ -60,7 +78,7 @@ func loadConfig(path string) (*Config, error) {
 	}
 
 	// 验证配置有效性
-	if config.MinInterval <= 0 || config.MaxInterval <= 0 || config.RingDuration <= 0 {
+	if config.MinInterval <= 0 || config.MaxInterval <= 0 || config.RingDuration <= 0 || config.OutDuration <= 0 {
 		return nil, fmt.Errorf("所有时间参数必须大于0")
 	}
 	if config.MinInterval > config.MaxInterval {

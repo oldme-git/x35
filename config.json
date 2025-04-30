@@ -1,5 +1,6 @@
 {
-  "minInterval": 3,
-  "maxInterval": 5,
-  "ringDuration": 2
+  "minInterval": 180,
+  "maxInterval": 300,
+  "ringDuration": 10,
+  "outDuration": 5400
 }
